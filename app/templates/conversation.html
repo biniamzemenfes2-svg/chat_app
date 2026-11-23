@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% from "components/_macros.html" import avatar %}
+{% block title %}{{ peer.display_name }} · Chat{% endblock %}
+{% block content %}
+<div id="chat" class="chat card app-card"
+     data-conversation-id="{{ conversation.id }}"
+     data-me-id="{{ current_user.id }}"
+     data-peer-id="{{ peer.id }}"
+     data-peer-online="{{ '1' if peer_online else '0' }}"
+     data-peer-last-seen="{{ peer_last_seen }}">
+  <header class="chat-header">
+    <a class="btn btn-sm btn-link chat-back" href="{{ url_for('main.index') }}" aria-label="Back to conversations">&larr;</a>
+    <a class="chat-peer" href="{{ url_for('profiles.view', username=peer.username) }}">
+      {{ avatar(peer, "md") }}
+      <span class="chat-peer-text">
+        <span class="chat-peer-name">{{ peer.display_name }}</span>
+        <span class="chat-peer-status text-muted">
+          <span id="presence-dot" class="presence-dot"></span>
+          <span id="presence-text">&nbsp;</span>
+        </span>
+      </span>
+    </a>
+  </header>
+
+  <div id="messages" class="chat-messages" aria-live="polite">
+    <div class="text-center">
+      <button id="load-earlier" class="btn btn-sm btn-outline-primary mb-3" type="button" hidden>Load earlier messages</button>
+    </div>
+    <div id="message-list"></div>
+    <div id="history-error" class="text-center text-danger small" hidden>Couldn't load messages. Try refreshing.</div>
+  </div>
+
+  <div id="typing-indicator" class="chat-typing text-muted" hidden>{{ peer.display_name }} is typing…</div>
+
+  <form id="composer" class="chat-composer" autocomplete="off">
+    <label for="composer-input" class="visually-hidden">Message</label>
+    <textarea id="composer-input" class="form-control" rows="1" maxlength="4000"
+              placeholder="Write a message" enterkeyhint="send"></textarea>
+    <button id="send-button" class="btn btn-primary" type="submit">Send</button>
+  </form>
+  <div id="send-error" class="chat-error text-danger small" role="alert" hidden></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/conversation.js') }}"></script>
+{% endblock %}

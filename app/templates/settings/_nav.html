@@ -1,0 +1,8 @@
+<ul class="nav nav-pills settings-nav mb-4">
+  <li class="nav-item">
+    <a class="nav-link {{ 'active' if request.endpoint == 'settings.profile' }}" href="{{ url_for('settings.profile') }}">Profile</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {{ 'active' if request.endpoint == 'settings.password' }}" href="{{ url_for('settings.password') }}">Password</a>
+  </li>
+</ul>

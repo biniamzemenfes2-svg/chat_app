@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% from "components/_macros.html" import avatar %}
+{% block title %}{{ profile_user.display_name }} · Chat{% endblock %}
+{% block content %}
+<div class="card app-card profile-card">
+  <div class="card-body p-4 text-center">
+    {{ avatar(profile_user, "lg") }}
+    <h1 class="h4 mt-3 mb-0">{{ profile_user.display_name }}</h1>
+    <div class="text-muted mb-3">@{{ profile_user.username }}</div>
+    {% if profile_user.bio %}<p class="profile-bio">{{ profile_user.bio }}</p>{% endif %}
+    <div class="small text-muted">Member since {{ profile_user.created_at.strftime("%B %Y") }}</div>
+    {% if profile_user.id == current_user.id %}
+    <a class="btn btn-outline-primary mt-3" href="{{ url_for('settings.profile') }}">Edit profile</a>
+    {% else %}
+    <form method="post" action="{{ url_for('conversations.start', username=profile_user.username) }}" class="mt-3">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-primary" type="submit">Message</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

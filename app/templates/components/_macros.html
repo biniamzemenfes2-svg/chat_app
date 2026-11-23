@@ -1,0 +1,18 @@
+{# Renders a WTForms field with a label, validation state and error messages. #}
+{% macro field(f, help=None) %}
+<div class="mb-3">
+  {{ f.label(class_="form-label") }}
+  {{ f(class_="form-control is-invalid" if f.errors else "form-control", **kwargs) }}
+  {% for error in f.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+  {% if help %}<div class="form-text">{{ help }}</div>{% endif %}
+</div>
+{% endmacro %}
+
+{# Profile picture, or the user's initial when there is none. size: sm | md | lg #}
+{% macro avatar(user, size="md") %}
+{% if user.avatar %}
+<img class="avatar avatar-{{ size }}" src="{{ url_for('profiles.avatar', filename=user.avatar) }}" alt="">
+{% else %}
+<span class="avatar avatar-{{ size }} avatar-initial" aria-hidden="true">{{ user.initials }}</span>
+{% endif %}
+{% endmacro %}

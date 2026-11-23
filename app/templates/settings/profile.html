@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "components/_macros.html" import field, avatar %}
+{% block title %}Profile settings · Chat{% endblock %}
+{% block content %}
+<div class="settings-wrap">
+  <h1 class="h4 mb-3">Settings</h1>
+  {% include "settings/_nav.html" %}
+  <div class="card app-card">
+    <div class="card-body p-4">
+      <form method="post" enctype="multipart/form-data" novalidate>
+        {{ form.hidden_tag() }}
+        <div class="d-flex align-items-center gap-3 mb-3">
+          {{ avatar(current_user, "lg") }}
+          <div class="flex-grow-1">
+            {{ form.avatar.label(class_="form-label") }}
+            {{ form.avatar(class_="form-control is-invalid" if form.avatar.errors else "form-control", accept="image/jpeg,image/png,image/webp") }}
+            {% for error in form.avatar.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+            <div class="form-text">JPEG, PNG or WebP, up to 2 MB. It will be cropped to a square.</div>
+            {% if current_user.avatar %}
+            <div class="form-check mt-2">
+              {{ form.remove_avatar(class_="form-check-input") }}
+              {{ form.remove_avatar.label(class_="form-check-label") }}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Username</label>
+          <input class="form-control" value="@{{ current_user.username }}" disabled>
+        </div>
+        {{ field(form.display_name) }}
+        {{ field(form.bio, rows=3, help="Up to 280 characters.") }}
+        {{ form.submit(class_="btn btn-primary") }}
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

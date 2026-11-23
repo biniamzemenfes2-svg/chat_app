@@ -1,0 +1,6 @@
+{
+  "name": "chat-browser-tests",
+  "private": true,
+  "description": "Runs the real page scripts in jsdom against a live server (two simulated browsers).",
+  "dependencies": { "jsdom": "^24.1.3" }
+}

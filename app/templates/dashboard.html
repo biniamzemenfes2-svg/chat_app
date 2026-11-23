@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Messages · Chat{% endblock %}
+{% block content %}
+<div id="dashboard" class="dashboard" data-me-id="{{ current_user.id }}">
+  <div class="card app-card">
+    <div class="card-body p-4">
+      <h1 class="h4 mb-3">Messages</h1>
+      <label for="user-search" class="visually-hidden">Find people</label>
+      <input id="user-search" class="form-control" type="search" maxlength="32"
+             placeholder="Find people by username or name" autocomplete="off">
+      <div id="search-status" class="form-text" hidden></div>
+      <div id="search-results" class="list-group mt-2" hidden></div>
+    </div>
+  </div>
+
+  <div class="card app-card mt-3">
+    <div class="card-header bg-transparent fw-semibold">Recent conversations</div>
+    <div id="conversation-list" class="list-group list-group-flush"></div>
+    <div id="conversations-empty" class="p-4 text-center text-muted" hidden>
+      No conversations yet. Search for someone above, open their profile and press <strong>Message</strong>.
+    </div>
+    <div id="conversations-error" class="p-3 text-danger" hidden>Couldn't load your conversations. Try refreshing.</div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

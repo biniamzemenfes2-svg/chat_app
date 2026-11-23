@@ -54,25 +54,26 @@ def test_socket_rejects_anonymous_connection(app, client):
 def test_socket_accepts_logged_in_user_and_joins_personal_room(app, client, make_user):
     user = make_user("alice")
     with client.session_transaction() as session:
-        session["_user_id"] = str(user.id)
+        session["_user_id"] = user.get_id()
         session["_fresh"] = True
 
     sio = socketio.test_client(app, flask_test_client=client)
     assert sio.is_connected()
 
     socketio.emit("ping", {"ok": True}, to=f"user:{user.id}")
-    received = sio.get_received()
-    assert [event["name"] for event in received] == ["ping"]
+    names = [event["name"] for event in sio.get_received()]
+    assert "ping" in names
 
 
 def test_user_does_not_receive_other_users_room_events(app, client, make_user):
     alice = make_user("alice")
     bob = make_user("bob")
     with client.session_transaction() as session:
-        session["_user_id"] = str(alice.id)
+        session["_user_id"] = alice.get_id()
         session["_fresh"] = True
 
     sio = socketio.test_client(app, flask_test_client=client)
+    sio.get_received()  # discard connect-time events (presence_state)
     socketio.emit("ping", {}, to=f"user:{bob.id}")
     assert sio.get_received() == []
 

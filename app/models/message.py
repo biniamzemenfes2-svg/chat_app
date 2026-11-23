@@ -23,6 +23,9 @@ class Message(db.Model):
     message_type = db.Column(
         db.String(16), nullable=False, default="text", server_default="text"
     )
+    # Chosen by the sending client. Together with sender_id it makes a retried
+    # send idempotent: a lost acknowledgement cannot create a duplicate message.
+    client_id = db.Column(db.String(36))
     reply_to_id = db.Column(
         db.Integer, db.ForeignKey("messages.id", ondelete="SET NULL")
     )
@@ -51,6 +54,7 @@ class Message(db.Model):
 
     __table_args__ = (
         db.Index("ix_messages_conversation_created", "conversation_id", "created_at", "id"),
+        db.UniqueConstraint("sender_id", "client_id", name="uq_message_sender_client"),
         CheckConstraint(
             "message_type IN ('text', 'attachment', 'gift', 'system')",
             name="type_valid",

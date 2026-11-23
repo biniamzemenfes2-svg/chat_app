@@ -61,6 +61,19 @@ class Config:
     MAX_CONTENT_LENGTH = int(os.environ.get("MAX_UPLOAD_MB", "10")) * 1024 * 1024
     UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER", str(BASE_DIR / "app" / "uploads"))
 
+    AVATAR_MAX_BYTES = int(os.environ.get("AVATAR_MAX_MB", "2")) * 1024 * 1024
+
+    # Brute-force protection. Only *failed* logins count toward the login limits.
+    LOGIN_LIMIT_PER_IP = os.environ.get("LOGIN_LIMIT_PER_IP", "30 per 15 minutes")
+    LOGIN_LIMIT_PER_ACCOUNT = os.environ.get("LOGIN_LIMIT_PER_ACCOUNT", "10 per 15 minutes")
+    REGISTER_LIMIT = os.environ.get("REGISTER_LIMIT", "10 per hour")
+
+    # Real-time event limits, per user (sliding window)
+    SOCKET_MESSAGES_PER_WINDOW = int(os.environ.get("SOCKET_MESSAGES_PER_WINDOW", "20"))
+    SOCKET_MESSAGE_WINDOW_SECONDS = int(os.environ.get("SOCKET_MESSAGE_WINDOW_SECONDS", "10"))
+    MESSAGE_MAX_LENGTH = 4000
+    USER_SEARCH_LIMIT = os.environ.get("USER_SEARCH_LIMIT", "60 per minute")
+
     # Rate limiting. Use a shared store (e.g. redis://...) with several workers.
     RATELIMIT_STORAGE_URI = os.environ.get("RATELIMIT_STORAGE_URI", "memory://")
 
@@ -82,7 +95,6 @@ class TestingConfig(Config):
     SECRET_KEY = "test-secret-key"
     SQLALCHEMY_DATABASE_URI = _database_url("TEST_DATABASE_URL")
     WTF_CSRF_ENABLED = False
-    RATELIMIT_ENABLED = False
 
 
 class ProductionConfig(Config):
