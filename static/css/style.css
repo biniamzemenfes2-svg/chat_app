@@ -1,5 +1,5 @@
 .content{
-display: flex;
+display: fixed;
 align-items: center;
 justify-content: center;
 }
@@ -70,6 +70,7 @@ form.buttons button[name="join"] {
 
 form.buttons button[name="join"]:hover {
     background-color: #0056b3;
+    transition: all 0.2s ease-in-out;
 }
 
 
