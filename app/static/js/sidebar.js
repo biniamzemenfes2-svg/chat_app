@@ -1,13 +1,15 @@
-/* Dashboard: user search and the live list of recent conversations. */
+/* Sidebar (every app page): live conversation list, user search, and the
+ * small actions on the welcome pane. */
 (function () {
   "use strict";
 
-  var root = document.getElementById("dashboard");
-  if (!root) return;
+  var shell = document.getElementById("app-shell");
+  if (!shell) return;
 
   var F = window.ChatFormat;
   var socket = window.ChatApp.socket;
-  var meId = Number(root.dataset.meId);
+  var meId = Number(shell.dataset.meId);
+  var activeId = Number(shell.dataset.activeConversation) || null;
 
   var listEl = document.getElementById("conversation-list");
   var emptyEl = document.getElementById("conversations-empty");
@@ -15,6 +17,7 @@
   var searchInput = document.getElementById("user-search");
   var searchStatus = document.getElementById("search-status");
   var resultsEl = document.getElementById("search-results");
+  var welcomeEmpty = document.getElementById("welcome-empty");
 
   var conversations = [];
 
@@ -28,18 +31,24 @@
 
   function render() {
     listEl.textContent = "";
-    emptyEl.hidden = conversations.length !== 0;
+    var none = conversations.length === 0;
+    emptyEl.hidden = !none;
+    if (welcomeEmpty) welcomeEmpty.hidden = !none;
+
     conversations.forEach(function (conversation) {
       var peer = conversation.peer;
-      var link = F.el("a", "list-group-item list-group-item-action conv-item");
+      var online = window.ChatApp.isOnline(peer.id);
+      var link = F.el("a", "conv-item" +
+        (conversation.id === activeId ? " active" : "") +
+        (conversation.unread > 0 ? " has-unread" : ""));
       link.href = conversation.url;
       link.dataset.id = conversation.id;
+      if (conversation.id === activeId) link.setAttribute("aria-current", "page");
 
       var avatarWrap = F.el("span", "conv-avatar");
       avatarWrap.appendChild(F.avatarNode(peer, "md"));
-      var dot = F.el("span", "presence-dot presence-dot-corner" +
-        (window.ChatApp.isOnline(peer.id) ? " online" : ""));
-      dot.title = window.ChatApp.isOnline(peer.id) ? "Online" : "Offline";
+      var dot = F.el("span", "presence-dot presence-dot-corner" + (online ? " online" : ""));
+      dot.title = online ? "Online" : "Offline";
       avatarWrap.appendChild(dot);
       link.appendChild(avatarWrap);
 
@@ -89,19 +98,32 @@
     return -1;
   }
 
+  function textOf(message) {
+    if (message.deleted) return "This message was deleted";
+    return (message.body || "").replace(/\s+/g, " ").slice(0, 80);
+  }
+
   socket.on("message_new", function (message) {
     var index = findIndex(message.conversation_id);
     if (index === -1) { load(); return; } // a conversation we haven't listed yet
     var conversation = conversations.splice(index, 1)[0];
     conversation.last_message = {
-      id: message.id,
-      sender_id: message.sender_id,
-      type: message.type,
-      text: (message.body || "").replace(/\s+/g, " ").slice(0, 80),
-      created_at: message.created_at
+      id: message.id, sender_id: message.sender_id, type: message.type,
+      text: textOf(message), created_at: message.created_at
     };
-    if (message.sender_id !== meId) conversation.unread += 1;
+    var viewing = message.conversation_id === activeId && document.visibilityState === "visible";
+    if (message.sender_id !== meId && !viewing) conversation.unread += 1;
     conversations.unshift(conversation);
+    render();
+  });
+
+  // Edits and deletes of the newest message change the preview line.
+  socket.on("message_updated", function (message) {
+    var index = findIndex(message.conversation_id);
+    if (index === -1) return;
+    var last = conversations[index].last_message;
+    if (!last || last.id !== message.id) return;
+    last.text = textOf(message);
     render();
   });
 
@@ -144,7 +166,7 @@
     }
     searchStatus.hidden = true;
     users.forEach(function (user) {
-      var link = F.el("a", "list-group-item list-group-item-action search-result");
+      var link = F.el("a", "search-result");
       link.href = user.profile_url;
       link.appendChild(F.avatarNode(user, "sm"));
       var text = F.el("span", "search-result-text");
@@ -175,6 +197,33 @@
   searchInput.addEventListener("input", function () {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(search, 250);
+  });
+
+  /* ------------------------------------------------- welcome-pane actions */
+
+  document.addEventListener("click", function (event) {
+    var focusBtn = event.target.closest("[data-action='focus-search']");
+    if (focusBtn) {
+      // On small screens the sidebar is the page; on the chat view go home first.
+      if (activeId && window.matchMedia("(max-width: 991.98px)").matches) {
+        window.location.href = "/";
+        return;
+      }
+      searchInput.focus();
+      searchInput.select();
+      return;
+    }
+    var copyBtn = event.target.closest("[data-copy]");
+    if (copyBtn) {
+      F.copyText(copyBtn.dataset.copy).then(function (ok) {
+        var label = copyBtn.querySelector("strong");
+        if (!label) return;
+        var original = label.dataset.original || label.textContent;
+        label.dataset.original = original;
+        label.textContent = ok ? "Copied!" : "Couldn't copy";
+        setTimeout(function () { label.textContent = original; }, 1500);
+      });
+    }
   });
 
   load();

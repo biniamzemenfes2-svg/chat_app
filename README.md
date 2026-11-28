@@ -3,10 +3,10 @@
 A private one-to-one messaging application (text, attachments, gifts, audio and
 video calls) built with Flask, Flask-SocketIO, PostgreSQL and WebRTC.
 
-> **Status: Phase 3 of 8 (private messaging).** Accounts, profiles and real-time
-> one-to-one messaging work end to end. The interface is functional but plain; the
-> professional redesign, emoji/reactions, calls, gifts and attachments come in later
-> phases. The original room-based prototype has been removed.
+> **Status: Phase 4 of 8 (professional interface).** Accounts, profiles, real-time
+> one-to-one messaging, emoji, reactions and message actions work end to end in a
+> responsive interface. Calls, gifts and attachments come in later phases; there are
+> deliberately no buttons for them until they work.
 
 ## What works today
 
@@ -28,12 +28,23 @@ video calls) built with Flask, Flask-SocketIO, PostgreSQL and WebRTC.
   paging of older messages, and idempotent sending (a retry never duplicates a message).
 - **Sent → Delivered → Read** receipts, unread counts, typing indicators, and
   online / last-seen presence (shared only with people you have a conversation with).
+- **Responsive app shell**: conversations sidebar plus main pane on desktop; one pane at a
+  time on tablets and phones. Welcome pane with suggested actions and a first-run empty state.
+- **Emoji picker** (1,849 emoji in 9 categories, search by name, "frequently used" remembered
+  per user) in the composer and for reactions.
+- **Reactions**: one per person per message; click your chip to remove it.
+- **Reply** (with a quote you can click to jump to the original), **edit** (marked
+  "edited"), **delete for everyone** (the text is erased from the database), **copy**.
+- **Search inside a conversation**, with highlighted matches and jump-to-message, including
+  messages far outside the loaded range ("Load newer" / "Latest messages" keep you oriented).
+- Day separators, a "N new messages" indicator while reading old history, and a
+  reconnecting banner.
 
 ### Not built yet
 
-Message edit, delete, reply, copy and in-conversation search; emoji picker and reactions;
-attachments; gifts; audio/video calls; the final responsive design; notifications outside
-an open page. Each is planned in the remaining phases.
+Attachments, virtual gifts and animated stickers, audio/video calls, and notifications
+outside an open page. Each is planned in the remaining phases. Moving between conversations
+is a normal page load (not a single-page app).
 
 ## Requirements
 
@@ -43,7 +54,7 @@ an open page. Each is planned in the remaining phases.
 ## Setup
 
 ```bash
-python3 -m venv ~/.venvs/chat          # keep the virtualenv outside the project
+python -m venv ~/.venvs/chat          # keep the virtualenv outside the project
 source ~/.venvs/chat/bin/activate
 pip install -r requirements-dev.txt
 
@@ -84,7 +95,7 @@ python run.py        # http://127.0.0.1:5000  (health check: /healthz)
 ### Tests
 
 ```bash
-pytest                      # unit, API and Socket.IO tests (226 tests)
+pytest                      # unit, API, Socket.IO and UI-structure tests (341 tests)
 tests/browser/run.sh        # optional: real page JavaScript in two simulated browsers
 ```
 
@@ -92,9 +103,10 @@ The tests **drop and recreate all tables** in `TEST_DATABASE_URL`. Never point i
 at a database you care about.
 
 `tests/browser/run.sh` starts the real server and drives `conversation.js`,
-`dashboard.js` and `realtime.js` in two jsdom "browsers" that chat with each other
-(live delivery, receipts, typing, presence, XSS payloads, lost-connection retry). It
-needs Node 18+. jsdom is not a real browser: it does not enforce the
+`sidebar.js`, `emoji-picker.js` and `realtime.js` in two jsdom "browsers" that chat with each other
+(live delivery, receipts, typing, presence, XSS payloads, lost-connection retry, emoji,
+reactions, reply/edit/delete/copy, search and long-history jumping; about 110 checks). It
+needs Node 18+ and **wipes `TEST_DATABASE_URL`**. jsdom is not a real browser: it does not enforce the
 Content-Security-Policy or do layout, so look at the pages in a real browser too.
 
 ## Migrations
@@ -192,6 +204,20 @@ run.py               development entry point / WSGI target
 - **Delivered means "reached the recipient's connection".** If the recipient is online
   when a message is sent it is delivered at once; otherwise at their next connect.
   Read means they had the conversation open and visible.
+- **Reactions are validated against the emoji catalog** (`static/data/emoji.json`), the same
+  file the picker uses, so arbitrary text can never be stored or broadcast as a reaction.
+  Each user has at most one reaction per message; choosing another replaces it.
+- **Delete is real**: the message body is erased in the database (not merely hidden), its
+  reactions are removed, and quotes of it show "Message deleted". Edits have no time limit
+  and are always labelled "edited". Only the sender can edit or delete; non-participants get
+  "not found".
+- **Replies can only quote a live message of the same conversation** (checked on send and
+  again when serializing).
+- **Message payloads are built in a constant number of queries** (page + reactions + reply
+  targets), verified by a test, so long histories don't turn into N+1 queries.
+- **No third-party assets at all**: Bootstrap, Bootstrap Icons and the Socket.IO client are
+  vendored, and a test fails if any page references a missing local asset or any script uses
+  `innerHTML`, `eval` and friends.
 - **No end-to-end encryption is claimed.** Access control is enforced server-side.
 - **Schema additions beyond the original spec:** `message_reactions`, `messages.reply_to_id`,
   `messages.delivered_at`, `messages.client_id`, `sent_gifts.message_id`, `calls.answered_at`, `users.session_token`.
@@ -201,9 +227,13 @@ run.py               development entry point / WSGI target
 - There is no email verification or "forgot password" flow yet (not in the current scope).
   A user who forgets their password cannot recover the account.
 - The common-password check is a very small list; it catches only the laziest choices.
-- The interface has been verified through automated tests and HTTP-level checks, but
-  not yet in real browsers; layout and the Content-Security-Policy deserve a manual look
-  (Phase 4 covers the full UI and responsive testing).
+- **The layout has not been checked in real browsers or on real devices.** Behaviour is
+  covered by tests and by simulated browsers (jsdom), which do not render CSS. The responsive
+  rules, the Content-Security-Policy and the visual design still deserve a manual pass on a
+  phone, a tablet and a desktop browser.
+- Emoji are drawn by the operating system's font: flags show as letter pairs on Windows, and
+  the catalog stops at Unicode 14 so older devices don't show empty boxes. There is no
+  skin-tone selector.
 - User search scans display names with `ILIKE`; fine for thousands of users, but a
   trigram index (`pg_trgm`) is the next step beyond that.
 - Presence reveals when someone was last online to everyone they have a conversation

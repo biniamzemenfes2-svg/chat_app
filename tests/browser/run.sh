@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Browser-level end-to-end test: starts the real server, then drives the real
-# page JavaScript (conversation.js, dashboard.js, realtime.js) in two simulated
+# page JavaScript (conversation.js, sidebar.js, emoji-picker.js, realtime.js) in two simulated
 # browsers (jsdom) that chat with each other.
 #
-#   export TEST_DATABASE_URL=postgresql://user:pass@localhost/chatapp_test
+#   export TEST_DATABASE_URL=postgresql://user:pass@localhost/chatapp_test   # WIPED on every run
 #   tests/browser/run.sh
 #
 # Needs Node 18+ and the project's Python virtualenv to be active.
@@ -18,6 +18,14 @@ export UPLOAD_FOLDER="$(mktemp -d)" PYTHONPATH="$PWD"
 
 [ -d tests/browser/node_modules ] || (cd tests/browser && npm install --silent)
 
+# Start from an empty schema so earlier runs can't leak users into this one.
+python - <<'PY'
+import os
+from sqlalchemy import create_engine, text
+with create_engine(os.environ["DATABASE_URL"]).begin() as conn:
+    conn.execute(text("DROP SCHEMA public CASCADE"))
+    conn.execute(text("CREATE SCHEMA public"))
+PY
 flask --app run.py db upgrade >/dev/null
 SETUP="$(python tests/browser/setup_e2e.py)"
 

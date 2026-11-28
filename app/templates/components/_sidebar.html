@@ -1,0 +1,46 @@
+{% from "components/_macros.html" import avatar %}
+<aside class="sidebar" aria-label="Conversations">
+  <div class="sidebar-head">
+    <a class="app-brand" href="{{ url_for('main.index') }}">
+      <span class="app-brand-mark" aria-hidden="true">C</span><span>Chat</span>
+    </a>
+    <button class="icon-btn" type="button" data-action="focus-search" aria-label="Find people">
+      <i class="bi bi-pencil-square"></i>
+    </button>
+  </div>
+
+  <a class="sidebar-me" href="{{ url_for('profiles.view', username=current_user.username) }}">
+    {{ avatar(current_user, "md") }}
+    <span class="sidebar-me-text">
+      <span class="sidebar-me-name">{{ current_user.display_name }}</span>
+      <span class="text-muted small">@{{ current_user.username }}</span>
+    </span>
+  </a>
+
+  <div class="sidebar-search">
+    <i class="bi bi-search" aria-hidden="true"></i>
+    <label for="user-search" class="visually-hidden">Find people</label>
+    <input id="user-search" class="form-control" type="search" maxlength="32"
+           placeholder="Find people by username or name" autocomplete="off">
+  </div>
+  <div id="search-status" class="sidebar-note" role="status" hidden></div>
+  <div id="search-results" class="search-results" hidden></div>
+
+  <div class="sidebar-title">Conversations</div>
+  <nav id="conversation-list" class="conv-list" aria-label="Recent conversations"></nav>
+  <div id="conversations-empty" class="sidebar-empty" hidden>
+    <i class="bi bi-chat-dots" aria-hidden="true"></i>
+    <p class="mb-0">No conversations yet.<br>Search for someone above to say hello.</p>
+  </div>
+  <div id="conversations-error" class="sidebar-note text-danger" role="alert" hidden>
+    Couldn't load your conversations. Try refreshing.
+  </div>
+
+  <div class="sidebar-foot">
+    <a class="sidebar-link" href="{{ url_for('settings.profile') }}"><i class="bi bi-gear" aria-hidden="true"></i> Settings</a>
+    <form method="post" action="{{ url_for('auth.logout') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="sidebar-link" type="submit"><i class="bi bi-box-arrow-right" aria-hidden="true"></i> Sign out</button>
+    </form>
+  </div>
+</aside>

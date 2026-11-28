@@ -1,28 +1,41 @@
-{% extends "base.html" %}
+{% extends "app_shell.html" %}
+{% set view = "list" %}
+{% set active_conversation_id = None %}
 {% block title %}Messages · Chat{% endblock %}
-{% block content %}
-<div id="dashboard" class="dashboard" data-me-id="{{ current_user.id }}">
-  <div class="card app-card">
-    <div class="card-body p-4">
-      <h1 class="h4 mb-3">Messages</h1>
-      <label for="user-search" class="visually-hidden">Find people</label>
-      <input id="user-search" class="form-control" type="search" maxlength="32"
-             placeholder="Find people by username or name" autocomplete="off">
-      <div id="search-status" class="form-text" hidden></div>
-      <div id="search-results" class="list-group mt-2" hidden></div>
-    </div>
-  </div>
+{% block pane %}
+<div class="pane-scroll">
+  <div class="welcome">
+    <h1 class="welcome-title">Welcome back, {{ (current_user.display_name.split() or [current_user.username])[0] }}</h1>
+    <p class="text-muted">Choose a conversation on the left, or start a new one.</p>
 
-  <div class="card app-card mt-3">
-    <div class="card-header bg-transparent fw-semibold">Recent conversations</div>
-    <div id="conversation-list" class="list-group list-group-flush"></div>
-    <div id="conversations-empty" class="p-4 text-center text-muted" hidden>
-      No conversations yet. Search for someone above, open their profile and press <strong>Message</strong>.
+    <div id="welcome-empty" class="empty-state" hidden>
+      <i class="bi bi-chat-heart" aria-hidden="true"></i>
+      <h2 class="h5">Start your first conversation</h2>
+      <p class="text-muted">Search for a friend by username, open their profile and press <strong>Message</strong>.</p>
+      <button class="btn btn-primary" type="button" data-action="focus-search">Find people</button>
     </div>
-    <div id="conversations-error" class="p-3 text-danger" hidden>Couldn't load your conversations. Try refreshing.</div>
+
+    <h2 class="section-label">Suggested actions</h2>
+    <div class="action-grid">
+      <button class="action-card" type="button" data-action="focus-search">
+        <i class="bi bi-person-plus" aria-hidden="true"></i>
+        <span><strong>Find someone</strong><small>Search by username or name</small></span>
+      </button>
+      {% if not current_user.avatar or not current_user.bio %}
+      <a class="action-card" href="{{ url_for('settings.profile') }}">
+        <i class="bi bi-person-circle" aria-hidden="true"></i>
+        <span><strong>Complete your profile</strong><small>Add a picture and a short bio</small></span>
+      </a>
+      {% endif %}
+      <button class="action-card" type="button" data-copy="@{{ current_user.username }}">
+        <i class="bi bi-clipboard" aria-hidden="true"></i>
+        <span><strong>Share your username</strong><small>Copy @{{ current_user.username }} so friends can find you</small></span>
+      </button>
+      <a class="action-card" href="{{ url_for('settings.password') }}">
+        <i class="bi bi-shield-lock" aria-hidden="true"></i>
+        <span><strong>Secure your account</strong><small>Change your password</small></span>
+      </a>
+    </div>
   </div>
 </div>
-{% endblock %}
-{% block scripts %}
-<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 {% endblock %}

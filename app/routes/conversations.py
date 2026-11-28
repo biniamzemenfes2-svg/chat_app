@@ -1,6 +1,7 @@
 from flask import (
     Blueprint,
     abort,
+    current_app,
     flash,
     jsonify,
     redirect,
@@ -10,6 +11,7 @@ from flask import (
 )
 from flask_login import current_user, login_required
 
+from app.extensions import limiter
 from app.services import auth_service, conversation_service, message_service
 from app.services.presence import tracker
 
@@ -68,9 +70,36 @@ def messages(conversation_id):
     if conversation is None:
         abort(404)
     peer = conversation_service.peer_of(conversation.id, current_user.id)
-    before = request.args.get("before", type=int)
-    limit = request.args.get("limit", default=message_service.HISTORY_PAGE_SIZE, type=int)
-    page, has_more = message_service.history(
-        conversation.id, peer.id, before_id=before, limit=limit
+    page = message_service.history_page(
+        conversation.id,
+        peer.id,
+        before_id=request.args.get("before", type=int),
+        after_id=request.args.get("after", type=int),
+        around_id=request.args.get("around", type=int),
+        limit=request.args.get("limit", default=message_service.HISTORY_PAGE_SIZE, type=int),
     )
-    return jsonify(messages=page, has_more=has_more, peer=user_summary(peer, with_presence=True))
+    if page is None:
+        abort(404)  # "around" a message that isn't in this conversation
+    return jsonify(
+        messages=page.messages,
+        has_more=page.has_older,
+        has_newer=page.has_newer,
+        peer=user_summary(peer, with_presence=True),
+    )
+
+
+def _per_user() -> str:
+    return f"conversation-search:{current_user.get_id()}"
+
+
+@bp.get("/api/conversations/<int:conversation_id>/search")
+@login_required
+@limiter.limit(lambda: current_app.config["USER_SEARCH_LIMIT"], key_func=_per_user)
+def search(conversation_id):
+    conversation = conversation_service.get_member_conversation(
+        conversation_id, current_user.id
+    )
+    if conversation is None:
+        abort(404)
+    results = message_service.search_messages(conversation.id, request.args.get("q", ""))
+    return jsonify(messages=results)

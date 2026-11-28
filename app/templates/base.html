@@ -5,10 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Chat{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap/bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap-icons/bootstrap-icons.min.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
 </head>
-<body>
+<body class="{% block body_class %}{% endblock %}"{% if current_user.is_authenticated %} data-emoji-url="{{ url_for('static', filename='data/emoji.json') }}"{% endif %}>
   {% from "components/_macros.html" import avatar %}
+  {% block navbar %}
   <nav class="navbar app-navbar">
     <div class="container">
       <a class="navbar-brand app-brand" href="{{ url_for('main.index') }}">
@@ -42,21 +44,18 @@
     </div>
   </nav>
 
+  {% endblock %}
+
   {% if current_user.is_authenticated %}
   <div id="connection-banner" class="alert alert-warning conn-banner" role="status" hidden>Reconnecting…</div>
   {% endif %}
 
+  {% block main %}
   <main class="container app-main">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% for category, message in messages %}
-        <div class="alert alert-{{ category if category in ['success','danger','warning','info'] else 'info' }} alert-dismissible fade show" role="alert">
-          {{ message }}
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-      {% endfor %}
-    {% endwith %}
+    {% include "components/_flashes.html" %}
     {% block content %}{% endblock %}
   </main>
+  {% endblock %}
 
   <script src="{{ url_for('static', filename='vendor/bootstrap/bootstrap.bundle.min.js') }}"></script>
   {% if current_user.is_authenticated %}

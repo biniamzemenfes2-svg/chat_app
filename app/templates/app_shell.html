@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{# Two-pane app layout: conversations sidebar + a main pane. On small screens
+   only one pane shows at a time (app-view-list / app-view-chat). #}
+{% block body_class %}app-body{% endblock %}
+{% block navbar %}{% endblock %}
+{% block main %}
+<div id="app-shell" class="app-shell app-view-{{ view }}"
+     data-me-id="{{ current_user.id }}"
+     data-active-conversation="{{ active_conversation_id or '' }}">
+  {% include "components/_sidebar.html" %}
+  <section class="app-pane">
+    <div class="pane-flashes">{% include "components/_flashes.html" %}</div>
+    {% block pane %}{% endblock %}
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/emoji-picker.js') }}"></script>
+<script src="{{ url_for('static', filename='js/sidebar.js') }}"></script>
+{% block page_scripts %}{% endblock %}
+{% endblock %}
